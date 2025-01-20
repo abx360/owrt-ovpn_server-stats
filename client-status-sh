@@ -1,14 +1,20 @@
+#!/bin/sh
+
 STATUS_FILE=/tmp/openvpn_clients.htm
-#VPN_CLIENTS="$(cat /var/run/openvpn.*.status | sed -n '/OpenVPN CLIENT LIST/,/ROUTING TABLE/p' | tail -n+4 | sed "s/ROUTING TABLE//g";)"
-VPN_CLIENTS="$(cat /var/run/openvpn.*.status | sed -n '/ROUTING TABLE/,/GLOBAL STATS/p' | tail -n+3 | sed "s/GLOBAL STATS//g";)"
-IFS=',' read -r -a array <<< "$VPN_CLIENTS"
+INPUT_FILE="/var/run/openvpn.*.status"
 
-echo "<div class=\"tr\">" > $STATUS_FILE
+# Estrai la sezione ROUTING TABLE e rimuovi intestazioni inutili
+VPN_CLIENTS=$(sed -n '/ROUTING TABLE/,/GLOBAL STATS/p' $INPUT_FILE | sed '/ROUTING TABLE/d' | sed '/GLOBAL STATS/d' | sed '/^Virtual/d')
 
-for client in "${array[@]}"
-do
-    echo "<div class=\"td\">" >> $STATUS_FILE 
-    echo "$client" >> $STATUS_FILE
-    echo "</div>" >> $STATUS_FILE
+# Crea il file HTML
+echo "" > "$STATUS_FILE" # Svuota il file all'inizio
+
+# Aggiungi ogni client come una riga HTML
+echo "$VPN_CLIENTS" | while IFS=',' read -r virtual_address common_name real_address last_ref; do
+    echo "<div class=\"tr\">" >> "$STATUS_FILE"
+    echo "    <div class=\"td\">$virtual_address</div>" >> "$STATUS_FILE"
+    echo "    <div class=\"td\">$common_name</div>" >> "$STATUS_FILE"
+    echo "    <div class=\"td\">$real_address</div>" >> "$STATUS_FILE"
+    echo "    <div class=\"td\">$last_ref</div>" >> "$STATUS_FILE"
+    echo "</div>" >> "$STATUS_FILE"
 done
-echo "</div>" >> $STATUS_FILE
