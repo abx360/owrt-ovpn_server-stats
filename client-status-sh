@@ -3,24 +3,36 @@
 STATUS_FILE=/tmp/openvpn_clients.htm
 INPUT_FILE="/var/run/openvpn.*.status"
 
-VPN_STATS=$(sed -n '/OpenVPN CLIENT LIST/,/ROUTING TABLE/p' $INPUT_FILE | sed '/ROUTING TABLE/d' | sed '/OpenVPN CLIENT LIST/d' | sed '/^Common Name/d' | sed '/^Updated/d')
-VPN_ROUTABLE=$(sed -n '/ROUTING TABLE/,/GLOBAL STATS/p' $INPUT_FILE | sed '/ROUTING TABLE/d' | sed '/GLOBAL STATS/d' | sed '/^Virtual/d')
+VPN_STATS=$(sed -n '/OpenVPN CLIENT LIST/,/ROUTING TABLE/p' $INPUT_FILE | sed '/ROUTING TABLE>
+VPN_ROUTABLE=$(sed -n '/ROUTING TABLE/,/GLOBAL STATS/p' $INPUT_FILE | sed '/ROUTING TABLE/d' >
 echo -e "$VPN_STATS" > "/tmp/tmp_vpn_stats.txt"
 echo -e "$VPN_ROUTABLE" > "/tmp/tmp_vpn_routetable.txt"
-VPN_CLIENTS=$(awk 'NR==FNR {x[FNR]=$0;next} {print x[FNR]","$0}' /tmp/tmp_vpn_stats.txt /tmp/tmp_vpn_routetable.txt)
-echo -e $VPN_CLIENTS
+VPN_CLIENTS=$(awk 'NR==FNR {x[FNR]=$0;next} {print x[FNR]","$0}' /tmp/tmp_vpn_stats.txt /tmp/>
 
 # Crea il file HTML
 echo "" > "$STATUS_FILE"
 
 # Aggiungi ogni client come una riga HTML
-echo "$VPN_CLIENTS" | while IFS=',' read -r common_name real_address bytes_received bytes_sent last_ref virtual_address common_name2 real_address2 last_ref2; do
+echo "$VPN_CLIENTS" | while IFS=',' read -r common_name real_address bytes_received bytes_sen>
+    # Default a 0 se i valori sono vuoti o non numerici
+    bytes_received=${bytes_received:-0}
+    bytes_sent=${bytes_sent:-0}
+    # Verifica se bytes_received e bytes_sent sono numerici
+    if [[ ! $bytes_received =~ ^[0-9]+$ ]]; then
+        bytes_received=0
+    fi
+    if [[ ! $bytes_sent =~ ^[0-9]+$ ]]; then
+        bytes_sent=0
+    fi
     echo "<div class=\"tr\">" >> "$STATUS_FILE"
     echo "    <div class=\"td\">$virtual_address</div>" >> "$STATUS_FILE"
     echo "    <div class=\"td\">$common_name</div>" >> "$STATUS_FILE"
     echo "    <div class=\"td\">$real_address</div>" >> "$STATUS_FILE"
     echo "    <div class=\"td\">$last_ref</div>" >> "$STATUS_FILE"
-    echo "    <div class=\"td\">$(($bytes_received / 1000000)) MB</div>" >> "$STATUS_FILE"
-    echo "    <div class=\"td\">$(($bytes_sent / 1000000)) MB</div>" >> "$STATUS_FILE"
+    echo "    <div class=\"td\">$(($bytes_received / 1000000))</div>" >> "$STATUS_FILE"
+    echo "    <div class=\"td\">$(($bytes_sent / 1000000))</div>" >> "$STATUS_FILE"
     echo "</div>" >> "$STATUS_FILE"
 done
+
+
+
